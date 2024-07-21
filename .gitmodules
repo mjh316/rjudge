@@ -1,3 +1,6 @@
 [submodule "piston"]
 	path = piston
 	url = https://github.com/engineer-man/piston.git
+[submodule "piston_rs"]
+	path = piston_rs
+	url = https://github.com/mjh316/piston_rs
