@@ -631,6 +631,7 @@ version = "0.4.3"
 dependencies = [
  "reqwest",
  "serde",
+ "tokio",
 ]
 
 [[package]]
@@ -717,13 +718,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "rjudge"
+name = "rjudge_api"
 version = "0.1.0"
 dependencies = [
  "axum",
  "piston_rs",
  "tokio",
 ]
+
+[[package]]
+name = "rjudge_executioner"
+version = "0.1.0"
 
 [[package]]
 name = "rustc-demangle"
