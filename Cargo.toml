@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.7.5"
+axum = { version = "0.7.5", features = ["macros"] }
 piston_rs = { path = "./piston_rs" }
 tokio = { version = "1.38.1", features = ["full"] }

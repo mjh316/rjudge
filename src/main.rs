@@ -1,10 +1,11 @@
 use axum::{
+    debug_handler,
     extract::{FromRef, State},
     http::StatusCode,
-    routing::get,
-    Router,
+    routing::{get, post},
+    Json, Router,
 };
-use piston_rs::Client;
+use piston_rs::{Client, PackagePayload};
 use tokio;
 
 #[derive(Clone)]
@@ -59,8 +60,15 @@ async fn get_packages(State(client): State<Client>) -> String {
     }
 }
 
-async fn install_package(State(client): State<Client>) -> (StatusCode, String) {
-    if let Ok(_) = client.install_package("python", "3.9.5").await {
+#[debug_handler]
+async fn install_package(
+    State(client): State<Client>,
+    Json(payload): Json<PackagePayload>,
+) -> (StatusCode, String) {
+    if let Ok(_) = client
+        .install_package(&payload.language, &payload.version)
+        .await
+    {
         return (StatusCode::OK, "Package installed".to_string());
     } else {
         return (
@@ -80,6 +88,7 @@ async fn main() {
         .route("/", get(root))
         .route("/runtimes", get(get_runtimes))
         .route("/packages", get(get_packages))
+        .route("/packages", post(install_package))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
