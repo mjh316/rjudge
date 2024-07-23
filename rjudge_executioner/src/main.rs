@@ -8,6 +8,7 @@ use amqprs::{
     connection::{Connection, OpenConnectionArguments},
     consumer::DefaultConsumer,
 };
+use piston_rs::Executor;
 use tokio::sync::Notify;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
@@ -50,15 +51,29 @@ async fn main() {
         .unwrap();
 
     let args = BasicConsumeArguments::new(&queue_name, "basic_consumer")
-        .manual_ack(false)
+        .manual_ack(false) // auto ack
         .finish();
 
     let (_ctag, mut rx) = channel.basic_consume_rx(args).await.unwrap();
 
     tokio::spawn(async move {
+        let client = piston_rs::Client::with_url("http://localhost:2000/api/v2");
+
         while let Some(msg) = rx.recv().await {
             if let Some(payload) = msg.content {
-                println!("[x] Received {:?}", str::from_utf8(&payload).unwrap());
+                let executor: Executor = match serde_json::from_slice(&payload) {
+                    Ok(executor) => executor,
+                    Err(e) => {
+                        println!("[x] Failed to parse payload: {:?}", e);
+                        continue;
+                    }
+                };
+                println!("[x] Received {:?}", executor);
+                if let Ok(response) = client.execute(&executor).await {
+                    println!("[x] Piston Response: {:?}", response);
+                } else {
+                    println!("[x] Failed to install package");
+                }
             }
         }
     });
