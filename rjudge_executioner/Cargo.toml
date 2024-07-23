@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+amqprs = "1.6.3"
+piston_rs = { version = "0.4.3", path = "../piston_rs" }
+serde = "1.0.204"
+serde_json = "1.0.120"
+tokio = "1.39.1"
