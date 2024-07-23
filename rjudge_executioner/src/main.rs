@@ -1,12 +1,16 @@
+use core::str;
+
 use amqprs::{
-    callbacks::{DefaultChannelCallback, DefaultConnectionCallback},
+    callbacks::{
+        ChannelCallback, ConnectionCallback, DefaultChannelCallback, DefaultConnectionCallback,
+    },
     channel::{BasicConsumeArguments, QueueBindArguments, QueueDeclareArguments},
     connection::{Connection, OpenConnectionArguments},
     consumer::DefaultConsumer,
 };
 use tokio::sync::Notify;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() {
     let connection = Connection::open(&OpenConnectionArguments::new(
         "localhost",
@@ -29,7 +33,7 @@ async fn main() {
         .unwrap();
 
     let (queue_name, _, _) = channel
-        .queue_declare(QueueDeclareArguments::default())
+        .queue_declare(QueueDeclareArguments::durable_client_named("submission"))
         .await
         .unwrap()
         .unwrap();
@@ -49,12 +53,17 @@ async fn main() {
         .manual_ack(false)
         .finish();
 
-    channel
-        .basic_consume(DefaultConsumer::new(args.no_ack), args)
-        .await
-        .unwrap();
+    let (_ctag, mut rx) = channel.basic_consume_rx(args).await.unwrap();
 
-    println!("consume forever…, ctrl+c to exit");
+    tokio::spawn(async move {
+        while let Some(msg) = rx.recv().await {
+            if let Some(payload) = msg.content {
+                println!("[x] Received {:?}", str::from_utf8(&payload).unwrap());
+            }
+        }
+    });
+
+    println!("[x] consume forever…, ctrl+c to exit");
     let guard = Notify::new();
     guard.notified().await;
 }

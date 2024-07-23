@@ -114,7 +114,7 @@ async fn post_submission(
         .unwrap();
 
     let (queue_name, _, _) = channel
-        .queue_declare(QueueDeclareArguments::default())
+        .queue_declare(QueueDeclareArguments::durable_client_named("submission"))
         .await
         .unwrap()
         .unwrap();
@@ -135,11 +135,16 @@ async fn post_submission(
     let args = BasicPublishArguments::new(&exchange_name, routing_key);
 
     channel
-        .basic_publish(BasicProperties::default(), content, args)
+        .basic_publish(
+            BasicProperties::default().with_delivery_mode(2).finish(),
+            content,
+            args,
+        )
         .await
         .unwrap();
 
-    time::sleep(time::Duration::from_secs(1)).await;
+    // time::sleep(time::Duration::from_secs(1)).await;
+    println!("[x] Submission sent");
 
     channel.close().await.unwrap();
     connection.close().await.unwrap();
