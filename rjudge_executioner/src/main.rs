@@ -4,7 +4,9 @@ use amqprs::{
     callbacks::{
         ChannelCallback, ConnectionCallback, DefaultChannelCallback, DefaultConnectionCallback,
     },
-    channel::{BasicConsumeArguments, QueueBindArguments, QueueDeclareArguments},
+    channel::{
+        BasicAckArguments, BasicConsumeArguments, QueueBindArguments, QueueDeclareArguments,
+    },
     connection::{Connection, OpenConnectionArguments},
     consumer::DefaultConsumer,
 };
@@ -51,7 +53,7 @@ async fn main() {
         .unwrap();
 
     let args = BasicConsumeArguments::new(&queue_name, "basic_consumer")
-        .manual_ack(false) // auto ack
+        // .manual_ack(false) // auto ack
         .finish();
 
     let (_ctag, mut rx) = channel.basic_consume_rx(args).await.unwrap();
@@ -61,6 +63,14 @@ async fn main() {
 
         while let Some(msg) = rx.recv().await {
             if let Some(payload) = msg.content {
+                channel
+                    .basic_ack(BasicAckArguments::new(
+                        msg.deliver.unwrap().delivery_tag(),
+                        false,
+                    ))
+                    .await
+                    .unwrap();
+
                 let executor: Executor = match serde_json::from_slice(&payload) {
                     Ok(executor) => executor,
                     Err(e) => {
